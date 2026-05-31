@@ -69,22 +69,6 @@ This mirrors the literature's finding that outdoor temperature at **1 h and 24 h
 - **Google Fonts** (Sora, IBM Plex Sans/Mono).
 
 > Viewers need an internet connection (Chart.js + fonts load from public CDNs).
-
-## 🚀 Deploy
-
-### GitHub Pages
-1. Create a repo named **`tallinn-heat-twin`** and push these files (`index.html` is the entry point).
-2. **Settings → Pages → Source: `main` branch → Save**.
-3. Live within ~1 min at `https://mohdbasitwani-wq.github.io/tallinn-heat-twin/`.
-
-### Netlify (no repo needed)
-- Drag `index.html` onto **app.netlify.com/drop** → instant public link.
-
-### Run locally
-- Just open `index.html` in any browser. (Or `python3 -m http.server` then visit `localhost:8000`.)
-
----
-
 ## 📊 Data & assumptions
 
 | Item | Value / source |
