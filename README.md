@@ -3,7 +3,7 @@
 > A live, single-file dashboard that shows a building's heating system as a **digital twin** and forecasts **next-day hourly heat demand** from the previous day plus the Tallinn weather forecast.
 
 ### 👉 [![Open Live Demo](https://img.shields.io/badge/▶_Open_Live_Demo-34e0b0?style=for-the-badge)](https://mohdbasitwani-wq.github.io/tallinn-heat-twin/)
-
+[![Tallinn Heat dashboard](preview.png)](https://mohdbasitwani-wq.github.io/tallinn-heat-twin/)
 <p align="center">
   <img alt="HTML" src="https://img.shields.io/badge/HTML5-page-E34F26?logo=html5&logoColor=white">
   <img alt="Chart.js" src="https://img.shields.io/badge/Chart.js-4.4-FF6384?logo=chartdotjs&logoColor=white">
