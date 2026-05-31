@@ -45,14 +45,6 @@ Heating load is, within one operating mode, close to **linear in outdoor tempera
 
 This mirrors the literature's finding that outdoor temperature at **1 h and 24 h lags** are the dominant predictors and that a clustered linear-regression model matches neural-net accuracy for heating — so the model stays transparent instead of a black box. On the winter scenario it lands **≈ 4.8 % MAPE** versus **≈ 6 % for naive persistence**.
 
----
-
-## 🛠️ Tech stack
-
-- Plain **HTML + CSS + vanilla JS** — one file, no framework, no build step.
-- **Chart.js 4** (CDN) for charts; inline **SVG** for the building twin.
-- **Google Fonts** (Sora, IBM Plex Sans/Mono).
-
 > Viewers need an internet connection (Chart.js + fonts load from public CDNs).
 ## 📊 Data & assumptions
 
