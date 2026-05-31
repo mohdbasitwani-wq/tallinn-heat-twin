@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Tallinn Heat · Digital Twin & Demand Forecast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0c111c; --panel:#141c2b; --panel2:#1b2536; --line:#243149;
+  --ink:#e8eef7; --mut:#8a9bb6; --dim:#5d6e8a;
+  --teal:#34e0b0; --amber:#f6b53c; --coral:#ff7a59; --blue:#5aa9ff; --red:#ff5d6c; --grn:#7ee081;
+  --r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;line-height:1.5;
+  background-image:radial-gradient(1200px 600px at 80% -10%,rgba(52,224,176,.07),transparent),radial-gradient(1000px 500px at 0% 0%,rgba(90,169,255,.06),transparent);}
+.num{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:1320px;margin:0 auto;padding:22px}
+h1,h2,h3{font-family:'Sora',sans-serif;font-weight:600;letter-spacing:-.01em}
+
+header{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:18px}
+.brand{display:flex;flex-direction:column}
+.brand h1{font-size:21px;line-height:1.15}
+.brand span{color:var(--mut);font-size:12.5px;font-family:'IBM Plex Mono',monospace}
+.live{display:inline-flex;align-items:center;gap:7px;background:rgba(52,224,176,.12);color:var(--teal);
+  padding:5px 11px;border-radius:99px;font-size:12px;font-weight:500;font-family:'IBM Plex Mono',monospace}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--teal);animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.controls{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{background:none;border:none;color:var(--mut);padding:8px 13px;font-size:12.5px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif}
+.seg button.on{background:var(--panel2);color:var(--ink);font-weight:500}
+.btn{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:10px;
+  width:40px;height:38px;cursor:pointer;font-size:16px;display:inline-flex;align-items:center;justify-content:center}
+.btn:hover{border-color:var(--teal)}
+input[type=range]{accent-color:var(--teal)}
+.clock{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);min-width:118px;text-align:right}
+
+.grid{display:grid;gap:14px}
+.kpis{grid-template-columns:repeat(6,1fr);margin-bottom:14px}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:560px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:13px 15px}
+.kpi .lab{color:var(--mut);font-size:11.5px;text-transform:uppercase;letter-spacing:.06em}
+.kpi .val{font-family:'IBM Plex Mono',monospace;font-size:25px;font-weight:600;margin-top:5px}
+.kpi .sub{font-size:11.5px;color:var(--dim);margin-top:3px;font-family:'IBM Plex Mono',monospace}
+.up{color:var(--coral)}.down{color:var(--grn)}
+
+.cols{grid-template-columns:340px 1fr 300px}
+@media(max-width:1100px){.cols{grid-template-columns:1fr}}
+.row3{grid-template-columns:1fr 360px}
+@media(max-width:1100px){.row3{grid-template-columns:1fr}}
+.row4{grid-template-columns:1fr 1fr}
+@media(max-width:1100px){.row4{grid-template-columns:1fr}}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:15px 16px}
+.card h3{font-size:14px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.card .cap{color:var(--mut);font-size:11.5px;margin-bottom:11px}
+.chartbox{position:relative;height:200px}
+.chartbox.tall{height:230px}
+
+.twin svg{width:100%;height:auto}
+.zoneT{font-family:'IBM Plex Mono',monospace}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--mut);margin-top:9px}
+.legend i{display:inline-block;width:11px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+
+.wx{display:flex;align-items:baseline;gap:9px}
+.wx .big{font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600}
+.wxrow{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut);padding:6px 0;border-bottom:1px solid var(--line)}
+.wxrow span:last-child{font-family:'IBM Plex Mono',monospace;color:var(--ink)}
+
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.badge{font-family:'IBM Plex Mono',monospace;font-size:12px;padding:5px 10px;border-radius:8px;border:1px solid var(--line)}
+.badge b{font-weight:600}
+.bg-good{background:rgba(126,224,129,.1);color:var(--grn);border-color:rgba(126,224,129,.25)}
+.bg-warn{background:rgba(246,181,60,.1);color:var(--amber);border-color:rgba(246,181,60,.25)}
+
+.feed{display:flex;flex-direction:column;gap:9px;max-height:300px;overflow:auto}
+.alert{display:flex;gap:10px;padding:10px 11px;border-radius:10px;background:var(--panel2);border-left:3px solid var(--dim)}
+.alert.w{border-left-color:var(--amber)}.alert.i{border-left-color:var(--blue)}.alert.g{border-left-color:var(--grn)}.alert.d{border-left-color:var(--red)}
+.alert .ic{font-size:15px;line-height:1.3}
+.alert .tx{font-size:12.5px}
+.alert .tx b{font-weight:500}
+.alert .tm{color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:11px}
+
+.foot{grid-template-columns:1.3fr 1fr 1fr}
+@media(max-width:1100px){.foot{grid-template-columns:1fr}}
+.kv{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px dashed var(--line)}
+.kv span:last-child{font-family:'IBM Plex Mono',monospace;color:var(--ink)}
+.kv span:first-child{color:var(--mut)}
+p.note{font-size:12.5px;color:var(--mut);line-height:1.65}
+.tag{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--teal)}
+.ctrlrow{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:12.5px;color:var(--mut)}
+.ctrlrow input[type=range]{flex:1}
+.disclaimer{color:var(--dim);font-size:11.5px;margin-top:16px;line-height:1.6;border-top:1px solid var(--line);padding-top:12px}
+a{color:var(--blue)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="brand">
+    <h1>Tallinn Heat · Digital Twin & Demand Forecast</h1>
+    <span>59.44°N 24.75°E · air-source heat-pump building · hourly resolution</span>
+  </div>
+  <div class="live"><span class="dot"></span><span id="liveClock">DAY 1 · 00:00</span></div>
+  <div class="controls">
+    <div class="seg" id="wxseg">
+      <button data-m="winter" class="on">Winter design day</button>
+      <button data-m="live">Live Tallinn now</button>
+    </div>
+    <button class="btn" id="setbackBtn" title="Toggle night setback">N</button>
+    <button class="btn" id="pp">&#10073;&#10073;</button>
+    <input type="range" id="scrub" min="0" max="23" value="0" style="width:120px">
+  </div>
+</header>
+
+<div class="grid kpis" id="kpis"></div>
+
+<div class="grid cols">
+  <!-- digital twin -->
+  <div class="card twin">
+    <h3>Live building twin</h3>
+    <div class="cap">heat-pump hydronic loop · zone temperatures</div>
+    <svg viewBox="0 0 320 250" role="img" aria-label="building heating schematic">
+      <polygon points="18,58 160,20 302,58" fill="#7d5536"/>
+      <rect x="26" y="56" width="268" height="150" rx="8" fill="#0f1726" stroke="#243149"/>
+      <g id="zg0"><rect x="36" y="66" width="124" height="62" rx="6" fill="#16203200" stroke="#243149"/><text x="44" y="84" fill="#8a9bb6" font-size="11" font-family="IBM Plex Sans">Living</text><text x="152" y="86" text-anchor="end" class="zoneT" id="zt0" fill="#ff7a59" font-size="15">21.0°</text><rect id="rd0" x="78" y="104" width="40" height="13" rx="3" fill="#33425e"/></g>
+      <g id="zg1"><rect x="164" y="66" width="124" height="62" rx="6" stroke="#243149" fill="none"/><text x="172" y="84" fill="#8a9bb6" font-size="11" font-family="IBM Plex Sans">Office</text><text x="280" y="86" text-anchor="end" class="zoneT" id="zt1" fill="#ff7a59" font-size="15">21.0°</text><rect id="rd1" x="206" y="104" width="40" height="13" rx="3" fill="#33425e"/></g>
+      <g id="zg2"><rect x="36" y="132" width="124" height="62" rx="6" stroke="#243149" fill="none"/><text x="44" y="150" fill="#8a9bb6" font-size="11" font-family="IBM Plex Sans">Kitchen</text><text x="152" y="152" text-anchor="end" class="zoneT" id="zt2" fill="#ff7a59" font-size="15">21.0°</text><rect id="rd2" x="78" y="170" width="40" height="13" rx="3" fill="#33425e"/></g>
+      <g id="zg3"><rect x="164" y="132" width="124" height="62" rx="6" stroke="#243149" fill="none"/><text x="172" y="150" fill="#8a9bb6" font-size="11" font-family="IBM Plex Sans">Studio</text><text x="280" y="152" text-anchor="end" class="zoneT" id="zt3" fill="#ff7a59" font-size="15">22.0°</text><rect id="rd3" x="206" y="170" width="40" height="13" rx="3" fill="#33425e"/></g>
+      <path id="psup" d="M250,212 L250,124 L160,124" stroke="#ff7a59" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="9 7"/>
+      <path id="pret" d="M164,116 L268,116 L268,212" stroke="#5aa9ff" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="9 7"/>
+      <rect x="226" y="210" width="78" height="34" rx="6" fill="#0f1726" stroke="#243149"/>
+      <g id="fan" style="transform-origin:248px 227px">
+        <circle cx="248" cy="227" r="13" fill="none" stroke="#5aa9ff" stroke-width="2.4"/>
+        <line x1="248" y1="227" x2="248" y2="216" stroke="#5aa9ff" stroke-width="2.4"/>
+        <line x1="248" y1="227" x2="257" y2="233" stroke="#5aa9ff" stroke-width="2.4"/>
+        <line x1="248" y1="227" x2="239" y2="233" stroke="#5aa9ff" stroke-width="2.4"/>
+      </g>
+      <text x="272" y="224" fill="#8a9bb6" font-size="9" font-family="IBM Plex Sans">COP</text>
+      <text x="272" y="237" class="zoneT" id="copSvg" fill="#34e0b0" font-size="13">3.1</text>
+    </svg>
+    <div class="legend"><span><i style="background:#ff7a59"></i>supply <b class="num" id="supT">45°</b></span><span><i style="background:#5aa9ff"></i>return <b class="num" id="retT">38°</b></span><span><i style="background:#34e0b0"></i>ΔT <b class="num" id="dtT">7K</b></span></div>
+    <div class="ctrlrow"><label>Setpoint</label><input type="range" id="setp" min="18" max="23" step="0.5" value="21"><span class="num" id="setpV">21.0°C</span></div>
+  </div>
+
+  <!-- today profile -->
+  <div class="card">
+    <h3>Today · heat demand vs outdoor temperature</h3>
+    <div class="cap">load profile (kW) with the weather driver overlaid</div>
+    <div class="chartbox tall"><canvas id="todayChart"></canvas></div>
+  </div>
+
+  <!-- weather -->
+  <div class="card">
+    <h3>Tallinn weather</h3>
+    <div class="cap" id="wxCap">winter design day</div>
+    <div class="wx"><span class="big num" id="wxNow">−6°</span><span id="wxCond" style="color:var(--mut);font-size:12.5px">clear, cold</span></div>
+    <div style="margin-top:10px">
+      <div class="wxrow"><span>Now</span><span id="wxr0">−6 °C</span></div>
+      <div class="wxrow"><span>Min today</span><span id="wxr1">−9 °C</span></div>
+      <div class="wxrow"><span>Tomorrow min / max</span><span id="wxr2">−11 / −5 °C</span></div>
+      <div class="wxrow"><span>Heating degree-hours (24h)</span><span id="wxr3">624 °Ch</span></div>
+    </div>
+    <div class="chartbox" style="height:96px;margin-top:8px"><canvas id="wxChart"></canvas></div>
+  </div>
+</div>
+
+<div class="grid row3" style="margin-top:14px">
+  <!-- forecast -->
+  <div class="card">
+    <h3>Next-day demand forecast</h3>
+    <div class="cap">degree-hour regression + 24h-lag day shape, driven by tomorrow's Tallinn forecast — vs naive persistence</div>
+    <div class="badges" id="fcBadges"></div>
+    <div class="chartbox tall"><canvas id="fcChart"></canvas></div>
+  </div>
+  <!-- alerts -->
+  <div class="card">
+    <h3>Alerts & flexibility</h3>
+    <div class="cap">anomalies and load-shift recommendations</div>
+    <div class="feed" id="feed"></div>
+  </div>
+</div>
+
+<div class="grid row4" style="margin-top:14px">
+  <div class="card">
+    <h3>Hourly electricity price &amp; cost</h3>
+    <div class="cap">Nord Pool EE day-ahead (börsipakett) · cheapest hours flagged for hot-water shifting</div>
+    <div class="chartbox"><canvas id="priceChart"></canvas></div>
+  </div>
+  <div class="card">
+    <h3>Last 7 days · energy &amp; cost</h3>
+    <div class="cap">daily heat delivered (kWh) — today highlighted</div>
+    <div class="chartbox"><canvas id="weekChart"></canvas></div>
+  </div>
+</div>
+
+<div class="grid foot" style="margin-top:14px">
+  <div class="card">
+    <h3>How the forecast works</h3>
+    <p class="note">Heating load is, within one operating mode, close to <b>linear in outdoor temperature</b> — so the engine fits today's 24 observed pairs to a degree-hour line, <span class="tag">load ≈ a + b·max(0, 17−T_out)</span>, by least squares. The hour-by-hour leftover (the <b>diurnal / hot-water / setback signature</b>) is kept as a 24-hour-lag shape and added back. Tomorrow's prediction re-evaluates the temperature term on the <b>Tallinn forecast</b> and re-applies that shape. Literature finds temperature at 1 h and 24 h lags are the dominant predictors and that this clustered-regression approach matches neural nets for heating, which is why a transparent model is used here instead of a black box.</p>
+  </div>
+  <div class="card">
+    <h3>Building &amp; Estonian context</h3>
+    <div class="kv"><span>Location</span><span>Tallinn, EE</span></div>
+    <div class="kv"><span>Floor area</span><span>220 m²</span></div>
+    <div class="kv"><span>Heat source</span><span>air-source HP</span></div>
+    <div class="kv"><span>HP capacity</span><span>18 kW</span></div>
+    <div class="kv"><span>Energy use today</span><span id="euiToday">— kWh/m²</span></div>
+    <div class="kv"><span>Grid CO₂</span><span>350 g/kWh</span></div>
+  </div>
+  <div class="card">
+    <h3>Assumptions</h3>
+    <div class="kv"><span>Setpoint day / night</span><span id="aSet">21 / 17 °C</span></div>
+    <div class="kv"><span>Degree-hour base</span><span>17 °C</span></div>
+    <div class="kv"><span>Power price</span><span>spot, ~0.05–0.20 €/kWh</span></div>
+    <div class="kv"><span>Retail (incl. tax)</span><span>~0.24 €/kWh</span></div>
+    <div class="kv"><span>HP seasonal COP</span><span>2.1 – 3.2</span></div>
+    <div class="kv"><span>Forecast model</span><span>MLR + 24h lag</span></div>
+  </div>
+</div>
+
+<p class="disclaimer">
+Live current conditions for Tallinn were retrieved at build time (≈ +13 °C, partly sunny, late May — outside the heating season, so the "Live" mode shows mostly hot-water load). The "Winter design day" mode models a representative cold Estonian day where space heating dominates and the weather-driven forecast is meaningful. The building, loads, hourly spot-price curve and grid carbon factor are realistic but synthetic / editable assumptions, not metered readings — swap in real BMS, Elering spot, and EHR building data to operationalise. Built as a self-contained page (open locally or host anywhere).
+</p>
+
+</div>
+
+<script>
+const H=Array.from({length:24},(_,i)=>i);
+const UA=0.46, AREA=220, CAPKW=18, BASE=17, CO2=0.35, RETAIL=0.24;
+const PRICE=[0.06,0.05,0.05,0.05,0.06,0.08,0.13,0.18,0.17,0.13,0.11,0.10,0.09,0.09,0.10,0.12,0.15,0.19,0.20,0.18,0.14,0.11,0.09,0.07];
+const DOW=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+// weather scenarios: hourly outdoor temp for "today" and "tomorrow forecast"
+function diurnal(mean,amp){return H.map(h=>+(mean + amp*Math.sin(2*Math.PI*(h-9)/24)).toFixed(1));}
+const WX={
+  winter:{ today:diurnal(-6,3), fc:diurnal(-8,3), cond:'clear, cold', label:'winter design day' },
+  live:{   today:diurnal(12,3.5), fc:diurnal(12.5,4), cond:'partly sunny', label:'live · Tallinn now (+13 °C)' }
+};
+
+function rng(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
+let SETBACK=true, SETPOINT=21;
+function setp(h){return (SETBACK && (h<6||h>=22))?Math.min(SETPOINT,SETPOINT-4):SETPOINT;}
+function dhw(h){return [7,8,9].includes(h)?3.2:[18,19,20,21].includes(h)?4.0:0;}
+function boost(h){return [6,7].includes(h)?2.0:0;}
+function cop(T){return +Math.max(1.9,Math.min(3.4,2.5+0.07*(T+3))).toFixed(2);}
+
+function genDay(temps,seed){const r=rng(seed);return temps.map((T,h)=>{
+  let q=UA*Math.max(0,setp(h)-T)+dhw(h)+boost(h);
+  q*=1+0.05*(r()*2-1); return +Math.max(0.3,q).toFixed(2);});}
+
+// least-squares fit load = a + b*x , x=HDH
+function fit(x,y){const n=x.length;let sx=0,sy=0,sxx=0,sxy=0;
+  for(let i=0;i<n;i++){sx+=x[i];sy+=y[i];sxx+=x[i]*x[i];sxy+=x[i]*y[i];}
+  const d=n*sxx-sx*sx||1; const b=(n*sxy-sx*sy)/d; const a=(sy-b*sx)/n; return{a,b};}
+function mape(p,a){let s=0;for(let i=0;i<p.length;i++)s+=Math.abs(p[i]-a[i])/Math.max(0.5,a[i]);return +(100*s/p.length).toFixed(1);}
+
+let todayChart,wxChart,fcChart,priceChart,weekChart;
+let MODE='winter', tIdx=0, playing=true, timer=null;
+let today, tomoActual, tomoPred, tomoNaive, todayTemps, fcTemps, fitp, mModel, mNaive;
+
+function rebuild(){
+  const w=WX[MODE]; todayTemps=w.today; fcTemps=w.fc;
+  today=genDay(todayTemps,52);
+  tomoActual=genDay(fcTemps,77);
+  const x=todayTemps.map(T=>Math.max(0,BASE-T));
+  fitp=fit(x,today);
+  const resid=H.map(h=>today[h]-(fitp.a+fitp.b*x[h]));
+  tomoPred=H.map(h=>+Math.max(0.3, fitp.a+fitp.b*Math.max(0,BASE-fcTemps[h])+resid[h]).toFixed(2));
+  tomoNaive=today.slice();
+  mModel=mape(tomoPred,tomoActual); mNaive=mape(tomoNaive,tomoActual);
+  document.getElementById('wxCap').textContent=w.label;
+  document.getElementById('wxCond').textContent=w.cond;
+  const hdh=todayTemps.reduce((s,T)=>s+Math.max(0,BASE-T),0);
+  document.getElementById('wxr1').textContent=Math.min(...todayTemps).toFixed(0)+' °C';
+  document.getElementById('wxr2').textContent=Math.min(...fcTemps).toFixed(0)+' / '+Math.max(...fcTemps).toFixed(0)+' °C';
+  document.getElementById('wxr3').textContent=Math.round(hdh)+' °Ch';
+  document.getElementById('aSet').textContent=SETPOINT+' / '+(SETBACK?(SETPOINT-4):SETPOINT)+' °C';
+  document.getElementById('euiToday').textContent=(today.reduce((s,v)=>s+v,0)/AREA).toFixed(2)+' kWh/m²';
+  buildFeed(); if(todayChart) updCharts();
+  if(tIdx>23)tIdx=0;
+}
+
+// ---------- charts ----------
+const gridc='#243149', tickc='#8a9bb6';
+const axOpt=(unit)=>({grid:{color:gridc},ticks:{color:tickc,font:{family:'IBM Plex Mono'},callback:v=>v+unit}});
+Chart.defaults.font.family="'IBM Plex Sans'";Chart.defaults.color=tickc;
+
+function initCharts(){
+  todayChart=new Chart(todayChart_ctx(),{type:'line',data:{labels:H,datasets:[
+    {label:'heat kW',data:today,borderColor:'#ff7a59',backgroundColor:'rgba(255,122,89,.14)',fill:true,tension:.35,pointRadius:0,borderWidth:2,yAxisID:'y'},
+    {label:'outdoor °C',data:todayTemps,borderColor:'#5aa9ff',borderDash:[5,4],tension:.4,pointRadius:0,borderWidth:1.6,yAxisID:'y1'}
+  ]},options:baseOpt({y:axOpt(' kW'),y1:{position:'right',...axOpt('°'),grid:{drawOnChartArea:false}}})});
+
+  wxChart=new Chart(byid('wxChart'),{type:'line',data:{labels:H,datasets:[
+    {label:'today',data:todayTemps,borderColor:'#5aa9ff',tension:.4,pointRadius:0,borderWidth:1.8},
+    {label:'forecast',data:fcTemps,borderColor:'#34e0b0',borderDash:[4,3],tension:.4,pointRadius:0,borderWidth:1.8}
+  ]},options:baseOpt({y:axOpt('°')},true)});
+
+  fcChart=new Chart(byid('fcChart'),{type:'line',data:{labels:H,datasets:[
+    {label:'forecast (model)',data:tomoPred,borderColor:'#34e0b0',backgroundColor:'rgba(52,224,176,.12)',fill:true,tension:.35,pointRadius:0,borderWidth:2.4},
+    {label:'actual (revealed)',data:tomoActual,borderColor:'#e8eef7',tension:.35,pointRadius:0,borderWidth:1.4},
+    {label:'naive persistence',data:tomoNaive,borderColor:'#f6b53c',borderDash:[5,4],tension:.35,pointRadius:0,borderWidth:1.4}
+  ]},options:baseOpt({y:axOpt(' kW')})});
+
+  priceChart=new Chart(byid('priceChart'),{type:'bar',data:{labels:H,datasets:[
+    {label:'€/kWh',data:PRICE,backgroundColor:PRICE.map(p=>p<=0.07?'#34e0b0':p>=0.17?'#ff5d6c':'#33507e')}
+  ]},options:baseOpt({y:axOpt('')},true)});
+
+  weekChart=new Chart(byid('weekChart'),{type:'bar',data:{labels:[],datasets:[
+    {label:'kWh',data:[],backgroundColor:[]}
+  ]},options:baseOpt({y:axOpt('')},true)});
+}
+function todayChart_ctx(){return byid('todayChart');}
+function byid(id){return document.getElementById(id).getContext('2d');}
+function baseOpt(scales,noLeg){return{responsive:true,maintainAspectRatio:false,animation:{duration:300},
+  interaction:{intersect:false,mode:'index'},
+  plugins:{legend:noLeg?{display:false}:{labels:{boxWidth:11,boxHeight:11,font:{size:11},color:tickc}},
+    tooltip:{backgroundColor:'#0c111c',borderColor:'#243149',borderWidth:1}},
+  scales:{x:{grid:{color:gridc},ticks:{color:tickc,font:{family:'IBM Plex Mono'},maxTicksLimit:12}},...scales}};}
+
+function updCharts(){
+  todayChart.data.datasets[0].data=today; todayChart.data.datasets[1].data=todayTemps; todayChart.update();
+  wxChart.data.datasets[0].data=todayTemps; wxChart.data.datasets[1].data=fcTemps; wxChart.update();
+  fcChart.data.datasets[0].data=tomoPred; fcChart.data.datasets[1].data=tomoActual; fcChart.data.datasets[2].data=tomoNaive; fcChart.update();
+  // week trend: 6 synthetic past days + today
+  const means=[-3,-4,-6,-5,-7,-6]; const wk=means.map((m,i)=>genDay(diurnal(m,3),100+i).reduce((s,v)=>s+v,0));
+  const todayK=today.reduce((s,v)=>s+v,0); wk.push(todayK);
+  weekChart.data.labels=[...DOW.slice(0,6),'Today'];
+  weekChart.data.datasets[0].data=wk.map(v=>+v.toFixed(0));
+  weekChart.data.datasets[0].backgroundColor=wk.map((_,i)=>i===6?'#34e0b0':'#33507e');
+  weekChart.update();
+  // forecast badges
+  const peakH=tomoPred.indexOf(Math.max(...tomoPred));
+  const dTot=((tomoPred.reduce((s,v)=>s+v,0)-today.reduce((s,v)=>s+v,0))/today.reduce((s,v)=>s+v,0)*100);
+  document.getElementById('fcBadges').innerHTML=
+    `<span class="badge bg-good">model MAPE <b>${mModel}%</b></span>`+
+    `<span class="badge bg-warn">naive MAPE <b>${mNaive}%</b></span>`+
+    `<span class="badge">tomorrow peak <b>${Math.max(...tomoPred).toFixed(1)} kW</b> @ ${String(peakH).padStart(2,'0')}:00</span>`+
+    `<span class="badge">demand <b>${dTot>=0?'+':''}${dTot.toFixed(0)}%</b> vs today</span>`;
+}
+
+// ---------- KPI + twin playback ----------
+function render(){
+  const kw=today[tIdx], T=todayTemps[tIdx], c=cop(T), frac=Math.min(1,kw/CAPKW);
+  const day=1, hh=String(tIdx).padStart(2,'0');
+  document.getElementById('liveClock').textContent=`DAY ${day} · ${hh}:00`;
+  document.getElementById('scrub').value=tIdx;
+  // cumulative to current hour
+  let kwh=0,cost=0,co2=0,peak=0,peakH=0;
+  for(let k=0;k<=tIdx;k++){kwh+=today[k]; cost+=today[k]*PRICE[k]; co2+=today[k]/cop(todayTemps[k])*CO2; if(today[k]>peak){peak=today[k];peakH=k;}}
+  const yK=tomoNaive.reduce((s,v)=>s+v,0); // "yesterday" proxy = naive baseline day total
+  const dPct=tIdx>0?((kwh-(yK*(tIdx+1)/24))/(yK*(tIdx+1)/24)*100):0;
+  const KP=[
+    ['Heat output now',kw.toFixed(1)+' kW','at '+hh+':00','#ff7a59',''],
+    ['Energy today',Math.round(kwh)+' kWh',(dPct>=0?'▲ ':'▼ ')+Math.abs(dPct).toFixed(0)+'% vs base','#e8eef7',dPct>=0?'up':'down'],
+    ['Peak today',peak.toFixed(1)+' kW','@ '+String(peakH).padStart(2,'0')+':00','#f6b53c',''],
+    ['Cost today','€'+cost.toFixed(2),'spot price','#34e0b0',''],
+    ['CO₂ today',co2.toFixed(1)+' kg','350 g/kWh grid','#5aa9ff',''],
+    ['Live COP',c.toFixed(2),'@ '+T.toFixed(0)+'°C amb','#7ee081','']
+  ];
+  document.getElementById('kpis').innerHTML=KP.map(k=>
+    `<div class="kpi"><div class="lab">${k[0]}</div><div class="val" style="color:${k[3]}">${k[1]}</div><div class="sub ${k[4]}">${k[2]}</div></div>`).join('');
+  // twin
+  const flow=Math.round(30+frac*22), ret=flow-Math.round(5+frac*4);
+  document.getElementById('supT').textContent=flow+'°';
+  document.getElementById('retT').textContent=ret+'°';
+  document.getElementById('dtT').textContent=(flow-ret)+'K';
+  document.getElementById('copSvg').textContent=c.toFixed(1);
+  document.getElementById('wxNow').textContent=Math.round(T)+'°';
+  document.getElementById('wxr0').textContent=T.toFixed(0)+' °C';
+  for(let z=0;z<4;z++){
+    const off=[0,-0.4,0.2,1.0][z];
+    const dip=Math.max(0,(kw-CAPKW*0.85))*0.3;
+    document.getElementById('zt'+z).textContent=(setp(tIdx)+off-dip).toFixed(1)+'°';
+    document.getElementById('rd'+z).setAttribute('fill',radCol(frac));
+  }
+  const fd=Math.max(.35,1.5-frac*1.15);
+  document.getElementById('fan').style.animation=`spin ${fd.toFixed(2)}s linear infinite`;
+  const pd=Math.max(.5,1.7-frac*1.2);
+  document.getElementById('psup').style.animation=`flow ${pd.toFixed(2)}s linear infinite`;
+  document.getElementById('pret').style.animation=`flow ${pd.toFixed(2)}s linear infinite`;
+}
+function radCol(f){const a=[51,66,94],b=[255,122,89];return `rgb(${a.map((v,i)=>Math.round(v+(b[i]-v)*f)).join(',')})`;}
+
+function buildFeed(){
+  const peakH=today.indexOf(Math.max(...today));
+  const cheap=PRICE.map((p,h)=>[p,h]).sort((x,y)=>x[0]-y[0]).slice(0,3).map(c=>String(c[1]).padStart(2,'0')+':00');
+  const minCop=cop(Math.min(...todayTemps));
+  const items=[
+    ['d','⚠','<b>Demand spike</b> — '+Math.max(...today).toFixed(1)+' kW at '+String(peakH).padStart(2,'0')+':00, morning recovery + hot water.',String(peakH).padStart(2,'0')+':00'],
+    ['w','◔','<b>Low COP</b> '+minCop.toFixed(1)+' forecast at coldest hour — efficiency dips below 2.3.','03:00'],
+    ['i','€','<b>Shift hot water</b> to cheapest hours '+cheap.join(', ')+' (spot ≤ €0.07) to cut cost ~12%.','plan'],
+    ['g','✓','<b>Zones nominal</b> — all within ±0.5 °C of setpoint; no stuck valves detected.','now'],
+    ['w','↑','<b>Tomorrow colder</b> ('+Math.min(...fcTemps).toFixed(0)+' °C) — forecast peak '+Math.max(...tomoPred).toFixed(1)+' kW; pre-heat earlier.','06:00']
+  ];
+  if(MODE==='live') items.unshift(['i','☀','<b>Outside heating season</b> — load is hot-water dominated; space heating ≈ 0 at +13 °C.','live']);
+  document.getElementById('feed').innerHTML=items.map(a=>
+    `<div class="alert ${a[0]}"><div class="ic">${a[1]}</div><div class="tx">${a[2]}<div class="tm">${a[3]}</div></div></div>`).join('');
+}
+
+// ---------- controls ----------
+const ss=document.createElement('style');
+ss.textContent='@keyframes spin{to{transform:rotate(360deg)}}@keyframes flow{to{stroke-dashoffset:-16}}';
+document.head.appendChild(ss);
+function tick(){render(); tIdx=(tIdx+1)%24;}
+function play(){timer=setInterval(tick,650);}
+document.getElementById('pp').addEventListener('click',e=>{
+  playing=!playing; e.target.innerHTML=playing?'&#10073;&#10073;':'&#9654;';
+  if(playing)play(); else clearInterval(timer);
+});
+document.getElementById('scrub').addEventListener('input',e=>{
+  if(playing){playing=false;clearInterval(timer);document.getElementById('pp').innerHTML='&#9654;';}
+  tIdx=+e.target.value; render();
+});
+document.getElementById('wxseg').addEventListener('click',e=>{
+  if(!e.target.dataset.m)return;
+  [...e.currentTarget.children].forEach(b=>b.classList.toggle('on',b===e.target));
+  MODE=e.target.dataset.m; rebuild(); render();
+});
+document.getElementById('setbackBtn').addEventListener('click',e=>{
+  SETBACK=!SETBACK; e.target.style.color=SETBACK?'':'var(--dim)';
+  e.target.style.borderColor=SETBACK?'var(--teal)':''; rebuild(); render();
+});
+document.getElementById('setp').addEventListener('input',e=>{
+  SETPOINT=+e.target.value; document.getElementById('setpV').textContent=SETPOINT.toFixed(1)+'°C';
+  rebuild(); render();
+});
+document.getElementById('setbackBtn').style.borderColor='var(--teal)';
+
+// boot
+rebuild(); initCharts(); updCharts(); render(); play();
+</script>
+</body>
+</html>
