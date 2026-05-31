@@ -15,21 +15,6 @@
 
 **▶ https://mohdbasitwani-wq.github.io/tallinn-heat-twin/**
 
-> Goes live the moment you enable GitHub Pages (see [Deploy](#-deploy)) — provided the repo is named exactly `tallinn-heat-twin`. On Netlify it'll look like `https://tallinn-heat-twin.netlify.app`.
-
-## 📦 Suggested repository name
-
-| Name | Vibe |
-|------|------|
-| **`tallinn-heat-twin`** ⭐ | clear, location + concept — recommended |
-| `heat-twin-dashboard` | product-y, generic location |
-| `building-heat-forecast` | emphasises the forecasting angle |
-| `nord-heat` | short and brandable |
-
-The README and links below assume **`tallinn-heat-twin`**.
-
----
-
 ## ✨ Features
 
 - **Live building twin** — animated heat-pump loop, per-zone temperatures, supply/return/ΔT, and a compressor whose spin + pipe-flow speed scale with real-time load.
