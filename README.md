@@ -4,6 +4,8 @@
 
 ### 👉 [**Open the live dashboard**](https://mohdbasitwani-wq.github.io/tallinn-heat-twin/)
 
+[![Tallinn Heat dashboard](docs/preview.png)](https://mohdbasitwani-wq.github.io/tallinn-heat-twin/)
+
 <p align="center">
   <img alt="HTML" src="https://img.shields.io/badge/HTML5-page-E34F26?logo=html5&logoColor=white">
   <img alt="Chart.js" src="https://img.shields.io/badge/Chart.js-4.4-FF6384?logo=chartdotjs&logoColor=white">
